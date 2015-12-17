@@ -2,6 +2,7 @@ module Control.Monad.KI
   ( KIEnv(..), KI
   , extendEnv, lookupKind
   , newKind
+  , readKindVar, writeKindVar
   ) where
 
 import qualified Data.Map as M
@@ -30,6 +31,12 @@ readKIRef = lift . readSTRef
 
 writeKIRef :: STRef s a -> a -> KI s ()
 writeKIRef ref val = lift $ writeSTRef ref val
+
+readKindVar :: KindVar s -> KI s (Maybe (KindS s))
+readKindVar (Meta _ ref) = readKIRef ref
+
+writeKindVar :: KindVar s -> KindS s -> KI s ()
+writeKindVar (Meta _ ref) kind = writeKIRef ref $ Just kind
 
 -- Environment Manipulation
 extendEnv :: [(Name, KindS s)] -> KI s a -> KI s a

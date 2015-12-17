@@ -11,9 +11,10 @@ import Control.Monad.ST.Trans
 -- Type
 data Type = Var   Name
           | Lit   Name
-          | Alias Name [Type] Type
+          | App   Type Type
+          | Alias Name [Name] Type
           -- multiple branches of product types
-          | ADT   Name [Type] [[Type]]
+          | ADT   Name [Name] [[Type]]
 
 type Name = String
 
@@ -26,6 +27,7 @@ type Kind = forall s. KindS s
 
 type KindRef s = STRef s (Maybe (KindS s))
 data KindVar s = Meta UID (KindRef s)
+  deriving Eq
 
 type UID = Int
 
