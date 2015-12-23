@@ -1,6 +1,7 @@
 module Control.Monad.KI
   ( KIEnv(..), KI
   , extendEnv, lookupKind
+  , kindToKindS, kindSToKind
   , newKind
   , readKindVar, writeKindVar
   ) where
@@ -9,7 +10,6 @@ import qualified Data.Map as M
 
 import Control.Monad.Except
 import Control.Monad.Reader
-import Control.Monad.Identity
 import Control.Monad.ST.Trans
 
 import Data.KindInfer.BasicType
@@ -20,7 +20,7 @@ data KIEnv s = KIEnv
   , getEnv :: M.Map Name (KindS s)
   }
 
-type KI s = ReaderT (KIEnv s) (STT s (ExceptT ErrMsg Identity))
+type KI s = ReaderT (KIEnv s) (STT s (Except ErrMsg))
 
 -- Monad-related auxiliaries
 newKIRef :: a -> KI s (STRef s a)
@@ -49,6 +49,20 @@ lookupKind n = do
   case M.lookup n env of
     Just k  -> return k
     Nothing -> throwError $ "Not in scope: " ++ show n
+
+-- KindS <-> Kind
+kindToKindS :: Kind -> KI s (KindS s)
+kindToKindS Star            = return StarS
+kindToKindS (k1 `Arrow` k2) = ArrowS <$> kindToKindS k1 <*> kindToKindS k2
+
+kindSToKind :: KindS s -> KI s Kind
+kindSToKind StarS          = return Star
+kindSToKind (ArrowS k1 k2) = Arrow <$> kindSToKind k1 <*> kindSToKind k2
+kindSToKind (KindVar kv)   = do
+  maybeK <- readKindVar kv
+  case maybeK of
+    Just k  -> kindSToKind k
+    Nothing -> return Star
 
 -- Create kind variables
 newKind :: KI s (KindS s)

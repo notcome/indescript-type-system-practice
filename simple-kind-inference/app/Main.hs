@@ -1,6 +1,7 @@
 module Main where
 
-import Lib
+import Data.KindInfer.BasicType
+import TypeSystem.KindInfer
 
 main :: IO ()
-main = someFunc
+main = undefined
