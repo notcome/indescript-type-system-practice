@@ -5,11 +5,26 @@ import TypeSystem.KindInfer
 
 main :: IO ()
 main = do
+  runTestTT kindPprTest
   runTestTT adtPosTest
   return ()
 
 group :: String -> [Test] -> Test
 group label = TestLabel label . TestList
+
+-- Kind Prettyprint Test
+kindPprTest :: Test
+kindPprTest = group "Kind Prettyprint Test" [
+    show star  ~=? "*"
+  , show s2s   ~=? "* -> *"
+  , show s_s2s ~=? "* -> * -> *"
+  , show s2s_s ~=? "(* -> *) -> *"
+  ] where
+    (==>) = Arrow
+    star  = Star
+    s2s   = star ==> star
+    s_s2s = star ==> s2s
+    s2s_s = s2s  ==> star
 
 -- ADT Positive Test
 adtPosTest :: Test
@@ -20,33 +35,34 @@ adtPosTest = group "ADT Positive Test" [
   , fixKind    ~=? fixKindInfered
   ] where
     inferKind t = case runKindInference [] [t] of
-      Right [k] -> k
+      Right [k] -> show k
       _         -> error "impossible"
 
     -- data Bool = True | False
     -- Bool :: *
-    boolKind = Star
+    boolKind = "*"
     boolKindInfered = inferKind $ ADT "Bool" [] [[], []]
 
     -- data Maybe a = Just a | Nothing
     -- Maybe :: * -> *
-    maybeKind = Star `Arrow` Star
+    maybeKind = "* -> *"
     maybeKindInfered = inferKind $ ADT "Maybe" ["a"] [[Var "a"], []]
 
     -- data Either a b = Left a | Right b
     -- Either :: * -> * -> *
-    eitherKind = Star `Arrow` (Star `Arrow` Star)
+    eitherKind = "* -> * -> *"
     eitherKindInfered = inferKind $ ADT
       "Either"
       ["a", "b"]
       [[Var "a"], [Var "b"]]
 
-    -- data Fix a = In (Fix (a (Fix a)))
+    -- data Fix a = In (a (Fix a))
     -- Fix :: (* -> *) -> *
-    fixKind = (Star `Arrow` Star) `Arrow` Star
+    fixKind = "(* -> *) -> *"
     fixKindInfered = inferKind $ ADT
       "Fix"
       ["a"]
-      [[(App (Lit "Fix")
-             (App (Var "a")
-                  (App (Lit "Fix") (Var "a"))))]]
+      [[(App (Var "a") (App (Lit "Fix") (Var "a")))]]
+
+-- ADT Negative Test
+-- data Fix a = In (Fix (a (Fix a)))

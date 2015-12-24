@@ -24,7 +24,7 @@ data KindS s = StarS
 data Kind = Star
           | Arrow Kind Kind
           deriving Eq
-          
+
 instance Show Kind where
   show Star          = "*"
   show (Arrow k1 k2) = let
