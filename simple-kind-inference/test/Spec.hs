@@ -7,6 +7,7 @@ main :: IO ()
 main = do
   runTestTT kindPprTest
   runTestTT adtPosTest
+  runTestTT adtNegTest
   return ()
 
 group :: String -> [Test] -> Test
@@ -36,6 +37,7 @@ adtPosTest = group "ADT Positive Test" [
   ] where
     inferKind t = case runKindInference [] [t] of
       Right [k] -> show k
+      Left msg  -> msg
       _         -> error "impossible"
 
     -- data Bool = True | False
@@ -65,4 +67,18 @@ adtPosTest = group "ADT Positive Test" [
       [[(App (Var "a") (App (Lit "Fix") (Var "a")))]]
 
 -- ADT Negative Test
--- data Fix a = In (Fix (a (Fix a)))
+adtNegTest :: Test
+adtNegTest = group "ADT Negative Test" [
+    wrongFixMsg ~=? wrongFixRes
+  ] where
+    inferKind t = case runKindInference [] [t] of
+      Right [k] -> error "Should fail, but kind infered: " ++ show k
+      Left  msg -> msg
+      _         -> error "impossible"
+
+    -- data Fix a = In (Fix (a (Fix a)))
+    wrongFixMsg = "Cannot unify kinds, cycle detected."
+    wrongFixRes = inferKind $ ADT "Fix" ["a"]
+      [[(App (Var "Fix")
+             (App (Var "a")
+                  (App (Lit "Fix") (Var "a"))))]]

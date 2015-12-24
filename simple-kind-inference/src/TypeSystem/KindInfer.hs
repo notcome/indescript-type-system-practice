@@ -77,4 +77,7 @@ assignKind kv1 (KindVar kv2) = do
   case maybeK2 of
     Just k2 -> unify (KindVar kv1) k2
     Nothing -> writeKindVar kv1 $ KindVar kv2
-assignKind kv1 k2 = writeKindVar kv1 k2
+assignKind kv1 k2 = do
+  if kv1 `elem` (getKindVars k2)
+  then throwError "Cannot unify kinds, cycle detected."
+  else writeKindVar kv1 k2

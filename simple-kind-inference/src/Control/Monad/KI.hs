@@ -4,6 +4,7 @@ module Control.Monad.KI
   , kindToKindS, kindSToKind
   , newKind
   , readKindVar, writeKindVar
+  , getKindVars
   ) where
 
 import qualified Data.Map as M
@@ -77,3 +78,8 @@ newKindVar = Meta <$> newUID <*> newRef where
     return uniq
 
   newRef = newKIRef Nothing
+
+getKindVars :: KindS s -> [KindVar s]
+getKindVars StarS            = []
+getKindVars (k1 `ArrowS` k2) = getKindVars k1 ++ getKindVars k2 
+getKindVars (KindVar kv)     = [kv]
